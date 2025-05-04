@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sementeira XPTO - Cálculo de Sementes</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f9f0;
+            color: #333;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .control-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .map-container {
+            height: 80vh;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            border-radius: 10px;
+        }
+        
+        h1 {
+            color: #2e7d32;
+            margin-top: 0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a8f29;
+        }
+        
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #4a8f29;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #3a7320;
+        }
+        
+        .results {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .results h3 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            display: block;
+            background-color: #f0f7ed;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px dashed #4a8f29;
+            margin-bottom: 10px;
+        }
+        
+        .file-label:hover {
+            background-color: #e0efe0;
+        }
+        
+        .map-tools {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .draw-control {
+            background: #4a8f29;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .crop-info {
+            display: none;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #4a8f29;
+        }
+        
+        .simulation-controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .simulation-results {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .language-selector {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .language-btn {
+            background: #4a8f29;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .language-menu {
+            display: none;
+            position: absolute;
+            bottom: 50px;
+            right: 0;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-width: 120px;
+        }
+        
+        .language-menu a {
+            display: block;
+            padding: 8px 15px;
+            color: #333;
+            text-decoration: none;
+        }
+        
+        .language-menu a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .language-selector:hover .language-menu {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="control-panel">
+            <h1 id="app-title">Sementeira XPTO</h1>
+            <p id="app-description">Sistema de cálculo de sementes com integração SIG</p>
+            
+            <div class="form-group">
+                <label for="crop-type" id="crop-label">Cultura:</label>
+                <select id="crop-type">
+                    <option value="" id="select-crop-option">Selecione uma cultura</option>
+                    <option value="corn" id="corn-option">Milho</option>
+                    <option value="soy" id="soy-option">Soja</option>
+                    <option value="wheat" id="wheat-option">Trigo</option>
+                    <option value="rice" id="rice-option">Arroz</option>
+                    <option value="beans" id="beans-option">Feijão</option>
+                </select>
+            </div>
+            
+            <div class="crop-info" id="crop-info">
+                <h3 id="crop-info-title">Informações da Cultura</h3>
+                <p><strong id="spacing-label">Espaçamento recomendado:</strong> <span id="spacing-info"></span></p>
+                <p><strong id="seeds-label">Sementes por hectare:</strong> <span id="seeds-per-ha"></span></p>
+                <p><strong id="weight-label">Peso médio por semente:</strong> <span id="seed-weight"></span></p>
+            </div>
+            
+            <div class="form-group">
+                <label for="soil-type" id="soil-label">Tipo de Solo:</label>
+                <select id="soil-type">
+                    <option value="clay" id="clay-option">Argiloso</option>
+                    <option value="sandy" selected id="sandy-option">Arenoso</option>
+                    <option value="loam" id="loam-option">Franco</option>
+                    <option value="clay_loam" id="clay-loam-option">Argilo-arenoso</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="climate" id="climate-label">Clima:</label>
+                <select id="climate">
+                    <option value="temperate" id="temperate-option">Temperado</option>
+                    <option value="tropical" selected id="tropical-option">Tropical</option>
+                    <option value="dry" id="dry-option">Seco</option>
+                    <option value="humid" id="humid-option">Húmido</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="germination-rate" id="germination-label">Taxa de Germinação (%):</label>
+                <input type="number" id="germination-rate" min="1" max="100" value="85">
+            </div>
+            
+            <div class="form-group">
+                <label id="area-label">Definir área de plantio:</label>
+                <div class="map-tools">
+                    <button class="draw-control" id="draw-polygon">Desenhar Polígono</button>
+                    <button class="draw-control" id="clear-drawing">Limpar</button>
+                </div>
+                <label class="file-label" for="shapefile-upload" id="shapefile-label">
+                    Ou importar shapefile
+                    <input type="file" id="shapefile-upload" class="file-input" accept=".shp,.dbf,.shx,.prj">
+                </label>
+                <div id="area-display"><span id="area-text">Área selecionada:</span> 0 ha</div>
+            </div>
+            
+            <button id="calculate-btn">Calcular Necessidade de Sementes</button>
+            
+            <div class="results" id="results">
+                <h3 id="results-title">Resultados</h3>
+                <p><strong id="total-area-label">Área total:</strong> <span id="total-area">0</span> ha</p>
+                <p><strong id="total-seeds-label">Sementes necessárias:</strong> <span id="total-seeds">0</span></p>
+                <p><strong id="total-weight-label">Peso necessário:</strong> <span id="total-weight">0</span> kg</p>
+                <p><strong id="adjusted-seeds-label">Considerando taxa de germinação:</strong> <span id="adjusted-seeds">0</span> <span id="seeds-text">sementes</span></p>
+            </div>
+            
+            <div class="simulation-controls">
+                <h3 id="simulation-title">Simulação</h3>
+                <div class="form-group">
+                    <label for="sim-germination" id="sim-germination-label">Nova taxa de germinação (%):</label>
+                    <input type="number" id="sim-germination" min="1" max="100" value="75">
+                </div>
+                <div class="form-group">
+                    <label for="sim-spacing" id="sim-spacing-label">Novo espaçamento (cm):</label>
+                    <input type="number" id="sim-spacing" min="10" step="5" value="40">
+                </div>
+                <button id="simulate-btn">Simular</button>
+                
+                <div class="simulation-results" id="simulation-results">
+                    <h4 id="sim-results-title">Resultados da Simulação</h4>
+                    <p><strong id="sim-seeds-label">Sementes necessárias:</strong> <span id="sim-total-seeds">0</span></p>
+                    <p><strong id="sim-weight-label">Peso necessário:</strong> <span id="sim-total-weight">0</span> kg</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <div class="language-selector">
+        <button class="language-btn" id="current-language-btn">🌐 Português</button>
+        <div class="language-menu">
+            <a href="#" onclick="changeLanguage('pt')">🇵🇹 Português</a>
+            <a href="#" onclick="changeLanguage('en')">🇬🇧 English</a>
+            <a href="#" onclick="changeLanguage('es')">🇪🇸 Español</a>
+        </div>
+    </div>
+
+    <script>
+        // Sistema de tradução
+        const translations = {
+            pt: {
+                appTitle: "Sementeira XPTO",
+                appDescription: "Sistema de cálculo de sementes com integração SIG",
+                cropLabel: "Cultura:",
+                selectCropOption: "Selecione uma cultura",
+                cornOption: "Milho",
+                soyOption: "Soja",
+                wheatOption: "Trigo",
+                riceOption: "Arroz",
+                beansOption: "Feijão",
+                cropInfoTitle: "Informações da Cultura",
+                spacingLabel: "Espaçamento recomendado:",
+                seedsLabel: "Sementes por hectare:",
+                weightLabel: "Peso médio por semente:",
+                soilLabel: "Tipo de Solo:",
+                clayOption: "Argiloso",
+                sandyOption: "Arenoso",
+                loamOption: "Franco",
+                clayLoamOption: "Argilo-arenoso",
+                climateLabel: "Clima:",
+                temperateOption: "Temperado",
+                tropicalOption: "Tropical",
+                dryOption: "Seco",
+                humidOption: "Húmido",
+                germinationLabel: "Taxa de Germinação (%):",
+                areaLabel: "Definir área de plantio:",
+                drawPolygonBtn: "Desenhar Polígono",
+                clearDrawingBtn: "Limpar",
+                shapefileLabel: "Ou importar shapefile",
+                areaText: "Área selecionada:",
+                calculateBtn: "Calcular Necessidade de Sementes",
+                resultsTitle: "Resultados",
+                totalAreaLabel: "Área total:",
+                totalSeedsLabel: "Sementes necessárias:",
+                totalWeightLabel: "Peso necessário:",
+                adjustedSeedsLabel: "Considerando taxa de germinação:",
+                seedsText: "sementes",
+                simulationTitle: "Simulação",
+                simGerminationLabel: "Nova taxa de germinação (%):",
+                simSpacingLabel: "Novo espaçamento (cm):",
+                simulateBtn: "Simular",
+                simResultsTitle: "Resultados da Simulação",
+                simSeedsLabel: "Sementes necessárias:",
+                simWeightLabel: "Peso necessário:",
+                languageBtn: "🌐 Português",
+                selectCropAlert: "Selecione uma cultura",
+                selectAreaAlert: "Defina uma área de plantio válida",
+                calculateFirstAlert: "Calcule primeiro com os parâmetros padrão"
+            },
+            en: {
+                appTitle: "XPTO Seeding",
+                appDescription: "Seed calculation system with GIS integration",
+                cropLabel: "Crop:",
+                selectCropOption: "Select a crop",
+                cornOption: "Corn",
+                soyOption: "Soybean",
+                wheatOption: "Wheat",
+                riceOption: "Rice",
+                beansOption: "Beans",
+                cropInfoTitle: "Crop Information",
+                spacingLabel: "Recommended spacing:",
+                seedsLabel: "Seeds per hectare:",
+                weightLabel: "Average seed weight:",
+                soilLabel: "Soil Type:",
+                clayOption: "Clay",
+                sandyOption: "Sandy",
+                loamOption: "Loam",
+                clayLoamOption: "Clay loam",
+                climateLabel: "Climate:",
+                temperateOption: "Temperate",
+                tropicalOption: "Tropical",
+                dryOption: "Dry",
+                humidOption: "Humid",
+                germinationLabel: "Germination Rate (%):",
+                areaLabel: "Define planting area:",
+                drawPolygonBtn: "Draw Polygon",
+                clearDrawingBtn: "Clear",
+                shapefileLabel: "Or import shapefile",
+                areaText: "Selected area:",
+                calculateBtn: "Calculate Seed Requirements",
+                resultsTitle: "Results",
+                totalAreaLabel: "Total area:",
+                totalSeedsLabel: "Seeds needed:",
+                totalWeightLabel: "Weight needed:",
+                adjustedSeedsLabel: "Considering germination rate:",
+                seedsText: "seeds",
+                simulationTitle: "Simulation",
+                simGerminationLabel: "New germination rate (%):",
+                simSpacingLabel: "New spacing (cm):",
+                simulateBtn: "Simulate",
+                simResultsTitle: "Simulation Results",
+                simSeedsLabel: "Seeds needed:",
+                simWeightLabel: "Weight needed:",
+                languageBtn: "🌐 English",
+                selectCropAlert: "Select a crop",
+                selectAreaAlert: "Define a valid planting area",
+                calculateFirstAlert: "Calculate first with default parameters"
+            },
+            es: {
+                appTitle: "Siembra XPTO",
+                appDescription: "Sistema de cálculo de semillas con integración SIG",
+                cropLabel: "Cultivo:",
+                selectCropOption: "Seleccione un cultivo",
+                cornOption: "Maíz",
+                soyOption: "Soja",
+                wheatOption: "Trigo",
+                riceOption: "Arroz",
+                beansOption: "Frijoles",
+                cropInfoTitle: "Información del Cultivo",
+                spacingLabel: "Espaciado recomendado:",
+                seedsLabel: "Semillas por hectárea:",
+                weightLabel: "Peso promedio por semilla:",
+                soilLabel: "Tipo de Suelo:",
+                clayOption: "Arcilloso",
+                sandyOption: "Arenoso",
+                loamOption: "Franco",
+                clayLoamOption: "Franco arcillo-arenoso",
+                climateLabel: "Clima:",
+                temperateOption: "Templado",
+                tropicalOption: "Tropical",
+                dryOption: "Seco",
+                humidOption: "Húmedo",
+                germinationLabel: "Tasa de Germinación (%):",
+                areaLabel: "Definir área de siembra:",
+                drawPolygonBtn: "Dibujar Polígono",
+                clearDrawingBtn: "Limpiar",
+                shapefileLabel: "O importar shapefile",
+                areaText: "Área seleccionada:",
+                calculateBtn: "Calcular Necesidad de Semillas",
+                resultsTitle: "Resultados",
+                totalAreaLabel: "Área total:",
+                totalSeedsLabel: "Semillas necesarias:",
+                totalWeightLabel: "Peso necesario:",
+                adjustedSeedsLabel: "Considerando tasa de germinación:",
+                seedsText: "semillas",
+                simulationTitle: "Simulación",
+                simGerminationLabel: "Nueva tasa de germinación (%):",
+                simSpacingLabel: "Nuevo espaciado (cm):",
+                simulateBtn: "Simular",
+                simResultsTitle: "Resultados de Simulación",
+                simSeedsLabel: "Semillas necesarias:",
+                simWeightLabel: "Peso necesario:",
+                languageBtn: "🌐 Español",
+                selectCropAlert: "Seleccione un cultivo",
+                selectAreaAlert: "Defina un área de siembra válida",
+                calculateFirstAlert: "Calcule primero con los parámetros por defecto"
+            }
+        };
+
+        // Dados das culturas (com descrições traduzidas)
+        const cropData = {
+            corn: {
+                name: { pt: "Milho", en: "Corn", es: "Maíz" },
+                spacing: { 
+                    pt: "70cm entre linhas, 25cm entre plantas",
+                    en: "70cm between rows, 25cm between plants",
+                    es: "70cm entre hileras, 25cm entre plantas"
+                },
+                seedsPerHa: 60000,
+                seedWeight: 0.3,
+                description: {
+                    pt: "Cultura de verão, adaptável a diversos solos.",
+                    en: "Summer crop, adaptable to various soils.",
+                    es: "Cultivo de verano, adaptable a diversos suelos."
+                }
+            },
+            soy: {
+                name: { pt: "Soja", en: "Soybean", es: "Soja" },
+                spacing: {
+                    pt: "50cm entre linhas, 10cm entre plantas",
+                    en: "50cm between rows, 10cm between plants",
+                    es: "50cm entre hileras, 10cm entre plantas"
+                },
+                seedsPerHa: 250000,
+                seedWeight: 0.15,
+                description: {
+                    pt: "Excelente para rotação de culturas, fixa nitrogênio.",
+                    en: "Excellent for crop rotation, fixes nitrogen.",
+                    es: "Excelente para rotación de cultivos, fija nitrógeno."
+                }
+            },
+            wheat: {
+                name: { pt: "Trigo", en: "Wheat", es: "Trigo" },
+                spacing: {
+                    pt: "17cm entre linhas, 3cm entre plantas",
+                    en: "17cm between rows, 3cm between plants",
+                    es: "17cm entre hileras, 3cm entre plantas"
+                },
+                seedsPerHa: 3500000,
+                seedWeight: 0.04,
+                description: {
+                    pt: "Cultura de inverno, preferência por solos férteis.",
+                    en: "Winter crop, prefers fertile soils.",
+                    es: "Cultivo de invierno, prefiere suelos fértiles."
+                }
